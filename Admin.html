@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - SRC</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Montserrat&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      :root {
+        --violet: #7623ff;
+        --orange: #ff8c00;
+        --dark: #0d0d17;
+        --light: #ffffff;
+        --main-bg: #1e0c33;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: url("/assets/logo.png") center black no-repeat fixed;
+        background-size: contain;
+        color: var(--light);
+        font-family: "Montserrat", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: "Orbitron", sans-serif;
+      }
+
+      .back-arrow {
+        position: absolute;
+        top: 30px;
+        left: 30px;
+        text-decoration: none;
+        color: var(--light);
+        font-weight: 600;
+        padding: 12px 25px;
+        border-radius: 10px;
+        border: 2px solid var(--orange);
+        background-color: var(--dark);
+        transition: 0.3s;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1rem;
+        animation: neonBorderPulse 2s infinite alternate;
+        box-shadow: 0 0 10px rgba(118, 35, 255, 0.5);
+      }
+
+      .back-arrow:hover {
+        text-decoration: underline;
+        text-underline-offset: 6px;
+        color: var(--orange);
+        background-color: rgba(255, 140, 0, 0.1);
+        transform: translateX(-5px);
+      }
+
+      .back-arrow i {
+        font-size: 1.2rem;
+      }
+
+      .login-container {
+        background-color: black;
+        border: 3px solid var(--violet);
+        border-radius: 20px;
+        padding: 50px 40px;
+        max-width: 500px;
+        width: 100%;
+        position: relative;
+        z-index: 2;
+        animation: neonBorderPulse 2s infinite alternate;
+        box-shadow:
+          0 0 20px rgba(118, 35, 255, 0.8),
+          0 0 40px rgba(255, 140, 0, 0.4);
+        text-align: center;
+      }
+
+      .login-container::before,
+      .login-container::after {
+        content: "⚡";
+        position: absolute;
+        font-size: 24px;
+        color: var(--orange);
+        animation: sparkMove 1.5s infinite linear alternate;
+      }
+
+      .login-container::before {
+        top: -15px;
+        left: -15px;
+      }
+      .login-container::after {
+        bottom: -15px;
+        right: -15px;
+        animation-delay: 0.7s;
+      }
+
+      .title {
+        font-size: 2.5rem;
+        margin: 0 0 40px 0;
+        color: var(--violet);
+        text-shadow:
+          0 0 10px #b14bff,
+          0 0 25px #ff8c00,
+          0 0 50px var(--violet);
+        animation: neonGlow 1.3s infinite alternate;
+        text-decoration: none !important;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      .title::after {
+        content: "";
+        display: block;
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--violet), var(--orange));
+        margin: 15px auto;
+        border-radius: 2px;
+        animation: neonPulse 2s infinite alternate;
+      }
+
+      .form-group {
+        margin-bottom: 25px;
+        text-align: left;
+      }
+
+      .form-group label {
+        display: block;
+        color: var(--light);
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+      }
+
+      .input-container {
+        position: relative;
+      }
+
+      .input-container i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--orange);
+        font-size: 1.1rem;
+        z-index: 2;
+      }
+
+      .input-container input {
+        width: 100%;
+        padding: 15px 15px 15px 45px;
+        background: rgba(13, 13, 23, 0.8);
+        border: 2px solid var(--violet);
+        border-radius: 10px;
+        color: var(--light);
+        font-size: 1rem;
+        font-family: "Montserrat", sans-serif;
+        transition: 0.3s;
+        outline: none;
+      }
+
+      .input-container input:focus {
+        border-color: var(--orange);
+        box-shadow: 0 0 15px rgba(255, 140, 0, 0.5);
+        background: rgba(13, 13, 23, 0.9);
+      }
+
+      .input-container input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .btn-login {
+        width: 100%;
+        padding: 15px;
+        margin-top: 10px;
+        background: linear-gradient(90deg, var(--violet), var(--orange));
+        border-radius: 10px;
+        font-weight: bold;
+        color: white;
+        cursor: pointer;
+        transition: 0.3s;
+        border: none;
+        font-family: "Orbitron", sans-serif;
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn-login:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(255, 140, 0, 0.7);
+      }
+
+      .btn-login:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      .btn-login::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.5s ease;
+      }
+
+      .btn-login:hover::before {
+        left: 100%;
+      }
+
+      .message {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: 600;
+        display: none;
+        border: 2px solid;
+        animation: neonPulse 2s infinite alternate;
+      }
+
+      .message.success {
+        display: block;
+        background: rgba(0, 255, 0, 0.1);
+        border-color: #00ff00;
+        color: #00ff00;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      }
+
+      .message.error {
+        display: block;
+        background: rgba(255, 0, 0, 0.1);
+        border-color: #ff4444;
+        color: #ff9999;
+        box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        margin-top: 15px;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 25px;
+        height: 25px;
+        border: 3px solid rgba(118, 35, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--orange);
+        animation: spin 1s ease-in-out infinite;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .footer-info {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--violet);
+        font-weight: bold;
+        text-shadow: 0 0 5px rgba(118, 35, 255, 0.5);
+      }
+
+      .footer-info p {
+        margin: 5px 0;
+        line-height: 1.4;
+      }
+
+      @keyframes neonGlow {
+        from {
+          text-shadow:
+            0 0 10px #7623ff,
+            0 0 25px #ff8c00;
+        }
+        to {
+          text-shadow:
+            0 0 35px #ff8c00,
+            0 0 60px #7623ff;
+        }
+      }
+
+      @keyframes neonBorderPulse {
+        0% {
+          box-shadow:
+            0 0 10px #7623ff,
+            0 0 20px #ff8c00;
+          border-color: #7623ff;
+        }
+        100% {
+          box-shadow:
+            0 0 30px #ff8c00,
+            0 0 60px #7623ff;
+          border-color: #ff8c00;
+        }
+      }
+
+      @keyframes neonPulse {
+        0% {
+          box-shadow:
+            0 0 5px #7623ff,
+            0 0 10px #ff8c00;
+        }
+        50% {
+          box-shadow:
+            0 0 20px #7623ff,
+            0 0 35px #ff8c00;
+        }
+        100% {
+          box-shadow:
+            0 0 5px #7623ff,
+            0 0 10px #ff8c00;
+        }
+      }
+
+      @keyframes sparkMove {
+        0% {
+          transform: translate(0, 0) rotate(0deg);
+          opacity: 0.8;
+        }
+        50% {
+          transform: translate(5px, -5px) rotate(10deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-5px, 5px) rotate(-10deg);
+          opacity: 0.6;
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+          background-size: cover;
+        }
+
+        .back-arrow {
+          top: 20px;
+          left: 20px;
+          padding: 10px 20px;
+          font-size: 0.9rem;
+        }
+
+        .login-container {
+          padding: 30px 20px;
+          margin-top: 60px;
+        }
+
+        .title {
+          font-size: 2rem;
+          margin-bottom: 30px;
+        }
+
+        .title::after {
+          width: 80px;
+        }
+
+        .input-container input {
+          padding: 12px 12px 12px 40px;
+          font-size: 0.9rem;
+        }
+
+        .btn-login {
+          padding: 12px;
+          font-size: 1rem;
+        }
+
+        .footer-info {
+          margin-top: 25px;
+          font-size: 0.8rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .login-container {
+          padding: 25px 15px;
+        }
+
+        .title {
+          font-size: 1.8rem;
+        }
+
+        .back-arrow {
+          top: 15px;
+          left: 15px;
+          padding: 8px 15px;
+          font-size: 0.8rem;
+        }
+
+        .back-arrow i {
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a href="index.html" class="back-arrow" title="Retour à l'accueil">
+      <i class="fas fa-arrow-left"></i> Retour
+    </a>
+
+    <div class="login-container">
+      <h1 class="title">ADMIN SRC</h1>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email Administrateur</label>
+          <div class="input-container">
+            <i class="fas fa-user"></i>
+            <input
+              type="email"
+              id="email"
+              placeholder="admin@src.com"
+              required
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <div class="input-container">
+            <i class="fas fa-lock"></i>
+            <input
+              type="password"
+              id="password"
+              placeholder="••••••••"
+              required
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="loginBtn">
+          <span id="btnText">CONNEXION ADMIN</span>
+          <div class="loading" id="btnLoading">
+            <div class="loading-spinner"></div>
+            Connexion...
+          </div>
+        </button>
+
+        <div class="message" id="message"></div>
+      </form>
+
+      <div class="footer-info">
+        <p>Zone d'administration Shadow Racing Crew</p>
+        <p>Accès réservé aux membres autorisés</p>
+        <p>© 2024 Shadow Racing Crew</p>
+      </div>
+    </div>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDt50bMsfPWPR4DwMyVqd0Tus75k_L0r2Y",
+        authDomain: "src-v2.firebaseapp.com",
+        projectId: "src-v2",
+        storageBucket: "src-v2.firebasestorage.app",
+        messagingSenderId: "704096252496",
+        appId: "1:704096252496:web:765cbeb1a8e4b61632d755",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+
+      const loginForm = document.getElementById("loginForm");
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+      const loginBtn = document.getElementById("loginBtn");
+      const btnText = document.getElementById("btnText");
+      const btnLoading = document.getElementById("btnLoading");
+      const messageDiv = document.getElementById("message");
+
+      let authStateChecked = false;
+      auth.onAuthStateChanged((user) => {
+        if (!authStateChecked) {
+          authStateChecked = true;
+          console.log("État auth SRC-v2:", user ? "Connecté" : "Non connecté");
+          if (user) {
+            window.location.href = "dashboard.html";
+          }
+        }
+      });
+
+      function showMessage(text, type) {
+        messageDiv.textContent = text;
+        messageDiv.className = "message " + type;
+      }
+
+      function showLoading(show) {
+        if (show) {
+          btnText.style.display = "none";
+          btnLoading.style.display = "inline-block";
+          loginBtn.disabled = true;
+        } else {
+          btnText.style.display = "inline";
+          btnLoading.style.display = "none";
+          loginBtn.disabled = false;
+        }
+      }
+
+      window.addEventListener("load", () => {
+        emailInput.value = "";
+        passwordInput.value = "";
+        emailInput.focus();
+
+        const loginContainer = document.querySelector(".login-container");
+        loginContainer.style.opacity = "0";
+        loginContainer.style.transform = "scale(0.9)";
+        loginContainer.style.animation = "none";
+
+        setTimeout(() => {
+          loginContainer.style.transition = "all 0.5s ease";
+          loginContainer.style.opacity = "1";
+          loginContainer.style.transform = "scale(1)";
+          setTimeout(() => {
+            loginContainer.style.animation =
+              "neonBorderPulse 2s infinite alternate";
+          }, 500);
+        }, 100);
+      });
+
+      loginForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!email || !password) {
+          showMessage("Veuillez remplir tous les champs", "error");
+          return;
+        }
+
+        showLoading(true);
+        showMessage("", "");
+
+        try {
+          const userCredential = await auth.signInWithEmailAndPassword(
+            email,
+            password,
+          );
+
+          showMessage("Connexion réussie ! Redirection...", "success");
+
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 1500);
+        } catch (error) {
+          console.error("Erreur de connexion SRC-v2:", error);
+
+          let errorMessage = "Erreur de connexion au serveur SRC";
+          switch (error.code) {
+            case "auth/user-not-found":
+              errorMessage = "Compte administrateur non trouvé";
+              break;
+            case "auth/wrong-password":
+              errorMessage = "Mot de passe incorrect";
+              break;
+            case "auth/invalid-email":
+              errorMessage = "Format d'email invalide";
+              break;
+            case "auth/user-disabled":
+              errorMessage = "Ce compte administrateur est désactivé";
+              break;
+            case "auth/too-many-requests":
+              errorMessage =
+                "Trop de tentatives. Réessayez dans quelques minutes";
+              break;
+            case "auth/network-request-failed":
+              errorMessage = "Erreur réseau. Vérifiez votre connexion internet";
+              break;
+            case "auth/operation-not-allowed":
+              errorMessage =
+                "La connexion par email/mot de passe n'est pas activée";
+              break;
+          }
+
+          showMessage(errorMessage, "error");
+          showLoading(false);
+
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      });
+
+      emailInput.setAttribute("autocomplete", "new-email");
+      passwordInput.setAttribute("autocomplete", "new-password");
+
+      passwordInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          loginForm.dispatchEvent(new Event("submit"));
+        }
+      });
+    </script>
+  </body>
+</html>
