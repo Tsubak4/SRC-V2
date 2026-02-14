@@ -1,0 +1,1406 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - SRC</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Montserrat&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --violet: #7623ff;
+        --orange: #ff8c00;
+        --dark: #0d0d17;
+        --light: #ffffff;
+        --main-bg: #1e0c33;
+      }
+
+      .notification-container {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+
+      .notification {
+        min-width: 250px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease-out;
+        border-left: 4px solid;
+        backdrop-filter: blur(5px);
+        pointer-events: auto;
+      }
+
+      .notification.success {
+        background: rgba(0, 150, 0, 0.9);
+        border-left-color: #00ff00;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+      }
+
+      .notification.error {
+        background: rgba(200, 0, 0, 0.9);
+        border-left-color: #ff4444;
+        box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
+      }
+
+      .notification.info {
+        background: rgba(118, 35, 255, 0.9);
+        border-left-color: var(--violet);
+        box-shadow: 0 0 15px rgba(118, 35, 255, 0.3);
+      }
+
+      .notification.warning {
+        background: rgba(255, 140, 0, 0.9);
+        border-left-color: var(--orange);
+        box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+
+      .notification.fade-out {
+        animation: slideOut 0.3s ease-out forwards;
+      }
+
+      .planning-display {
+        margin-top: 20px;
+        padding: 15px;
+        background: rgba(13, 13, 23, 0.8);
+        border: 2px solid var(--violet);
+        border-radius: 8px;
+      }
+
+      .planning-item {
+        padding: 10px;
+        border-bottom: 1px solid var(--orange);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .planning-item:last-child {
+        border-bottom: none;
+      }
+
+      .planning-image {
+        max-width: 100px;
+        max-height: 100px;
+        border-radius: 4px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: url("/assets/logo.png") center black no-repeat fixed;
+        background-size: contain;
+        color: var(--light);
+        font-family: "Montserrat", sans-serif;
+        min-height: 100vh;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: "Orbitron", sans-serif;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        background: var(--dark);
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 10;
+        border-bottom: 2px solid var(--violet);
+      }
+
+      header img {
+        height: 50px;
+      }
+
+      nav {
+        display: none;
+        flex-direction: column;
+        background: var(--dark);
+        border: 2px solid var(--orange);
+        border-radius: 10px;
+        padding: 10px;
+        position: absolute;
+        top: 70px;
+        right: 20px;
+        width: 180px;
+        z-index: 20;
+      }
+
+      nav.show {
+        display: flex;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: var(--light);
+        font-weight: 600;
+        padding: 8px 15px;
+        border-radius: 10px;
+        border: 2px solid var(--orange);
+        background-color: var(--dark);
+        margin-bottom: 8px;
+        transition: 0.3s;
+        text-align: center;
+      }
+
+      nav a:hover {
+        text-decoration: underline;
+        text-underline-offset: 6px;
+        color: var(--orange);
+        background-color: rgba(255, 140, 0, 0.1);
+      }
+
+      .burger {
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        gap: 5px;
+        z-index: 30;
+        margin-left: auto;
+      }
+
+      .burger div {
+        width: 25px;
+        height: 3px;
+        background-color: var(--light);
+        transition: 0.3s;
+      }
+
+      .burger.active div:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+      }
+      .burger.active div:nth-child(2) {
+        opacity: 0;
+      }
+      .burger.active div:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+      }
+
+      @media (min-width: 1024px) {
+        .burger {
+          display: none;
+        }
+
+        nav {
+          display: flex !important;
+          flex-direction: row;
+          position: relative;
+          top: auto;
+          right: auto;
+          background: none;
+          border: none;
+          width: auto;
+          margin-left: auto;
+        }
+
+        nav a {
+          margin-right: 15px;
+          margin-bottom: 0;
+        }
+      }
+
+      main {
+        margin-top: 80px;
+        padding: 20px;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .dashboard-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .dashboard-title {
+        font-size: 2.5rem;
+        color: var(--violet);
+        text-shadow:
+          0 0 10px #b14bff,
+          0 0 25px #ff8c00;
+        margin-bottom: 10px;
+      }
+
+      .dashboard-subtitle {
+        color: var(--light);
+        font-size: 1.1rem;
+        opacity: 0.8;
+      }
+
+      .admin-section {
+        background-color: rgba(0, 0, 0, 0.7);
+        border: 3px solid var(--violet);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        animation: neonBorderPulse 2s infinite alternate;
+        box-shadow: 0 0 15px rgba(118, 35, 255, 0.5);
+      }
+
+      .admin-section h3 {
+        color: var(--orange);
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+        text-align: center;
+        border-bottom: 2px solid var(--violet);
+        padding-bottom: 10px;
+      }
+
+      .data-form {
+        display: grid;
+        gap: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        color: var(--light);
+        margin-bottom: 5px;
+        font-weight: 600;
+      }
+
+      .form-group input,
+      .form-group select {
+        padding: 12px 15px;
+        background: rgba(13, 13, 23, 0.8);
+        border: 2px solid var(--violet);
+        border-radius: 8px;
+        color: var(--light);
+        font-size: 1rem;
+        transition: 0.3s;
+        outline: none;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        border-color: var(--orange);
+        box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+      }
+
+      .data-list {
+        margin-top: 20px;
+      }
+
+      .data-item {
+        background: rgba(13, 13, 23, 0.8);
+        border: 2px solid var(--violet);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .data-item-content {
+        flex: 1;
+        color: var(--light);
+        font-size: 1rem;
+      }
+
+      .data-item-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+        border: none;
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(90deg, var(--violet), var(--orange));
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(255, 140, 0, 0.7);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 140, 0, 0.2);
+        color: var(--orange);
+        border: 2px solid var(--orange);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 140, 0, 0.3);
+        transform: scale(1.05);
+      }
+
+      .btn-small {
+        padding: 8px 15px;
+        font-size: 0.8rem;
+      }
+
+      .btn-danger {
+        background: rgba(255, 0, 0, 0.2);
+        color: #ff4444;
+        border: 2px solid #ff4444;
+      }
+
+      .btn-danger:hover {
+        background: rgba(255, 0, 0, 0.3);
+      }
+
+      footer {
+        text-align: center;
+        padding: 20px;
+        background: var(--dark);
+        color: var(--violet);
+        font-weight: bold;
+        margin-top: 50px;
+        border-top: 2px solid var(--violet);
+      }
+
+      .footer-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .footer-bottom {
+        flex: 1;
+        text-align: center;
+      }
+
+      @keyframes neonBorderPulse {
+        0% {
+          box-shadow:
+            0 0 10px #7623ff,
+            0 0 20px #ff8c00;
+          border-color: #7623ff;
+        }
+        100% {
+          box-shadow:
+            0 0 30px #ff8c00,
+            0 0 60px #7623ff;
+          border-color: #ff8c00;
+        }
+      }
+
+      @media (max-width: 768px) {
+        main {
+          padding: 15px;
+        }
+
+        .dashboard-title {
+          font-size: 2rem;
+        }
+
+        .admin-section {
+          padding: 20px;
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .data-item {
+          flex-direction: column;
+          gap: 10px;
+          align-items: flex-start;
+        }
+
+        .data-item-actions {
+          align-self: flex-end;
+        }
+
+        .footer-container {
+          flex-direction: column;
+          gap: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <header>
+      <img src="/assets/logo.png" alt="SRC Logo" />
+      <div class="burger" id="burger">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <nav id="nav-links">
+        <a href="#" id="logoutBtn">Déconnexion</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="dashboard-header">
+        <h1 class="dashboard-title">PANEL ADMINISTRATION SRC</h1>
+        <p class="dashboard-subtitle">
+          Gestion des classements et données de course
+        </p>
+      </div>
+
+      <section class="admin-section" id="planning-section">
+        <h3>📅 Planning des Courses</h3>
+        <div class="data-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="planning-date1">Date 1</label>
+              <input type="text" id="planning-date1" placeholder="JJ/MM/AAAA" />
+            </div>
+            <div class="form-group">
+              <label for="planning-time1">Heure 1</label>
+              <input type="text" id="planning-time1" placeholder="HH:MM" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="planning-date2">Date 2</label>
+              <input type="text" id="planning-date2" placeholder="JJ/MM/AAAA" />
+            </div>
+            <div class="form-group">
+              <label for="planning-time2">Heure 2</label>
+              <input type="text" id="planning-time2" placeholder="HH:MM" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="planning-image-url"
+                >Lien Postimage (direct link)</label
+              >
+              <input
+                type="text"
+                id="planning-image-url"
+                placeholder="https://i.postimg.cc/xxx/image.png"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-planning-btn"
+            >
+              💾 Enregistrer le planning
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="load-planning-btn"
+            >
+              📂 Charger le planning
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              id="clear-planning-btn"
+            >
+              🗑️ Effacer le planning
+            </button>
+          </div>
+        </div>
+        <div class="planning-display" id="planning-display">
+          <div class="planning-item" id="planning-date1-display"></div>
+          <div class="planning-item" id="planning-date2-display"></div>
+          <div class="planning-item" id="planning-image-display"></div>
+        </div>
+        <div class="status-message" id="planning-status"></div>
+      </section>
+
+      <section class="admin-section" id="blacklist-section">
+        <h3>📋 Liste Noir - Top 20 Pilotes</h3>
+        <div class="data-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="blacklist-position">Position (1-20)</label>
+              <input
+                type="number"
+                id="blacklist-position"
+                min="1"
+                max="20"
+                placeholder="1"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="blacklist-pseudo">Pseudo</label>
+              <input
+                type="text"
+                id="blacklist-pseudo"
+                placeholder="GhostRider"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="blacklist-voiture">Voiture</label>
+              <input
+                type="text"
+                id="blacklist-voiture"
+                placeholder="Nissan GTR R35"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="blacklist-points">Points</label>
+              <input
+                type="number"
+                id="blacklist-points"
+                placeholder="12450"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="add-blacklist-btn"
+            >
+              Ajouter/Mettre à jour
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="clear-blacklist-btn"
+            >
+              Vider la liste
+            </button>
+          </div>
+        </div>
+        <div class="data-list" id="blacklist-list"></div>
+        <div class="status-message" id="blacklist-status"></div>
+      </section>
+
+      <section class="admin-section" id="courses-section">
+        <h3>🏁 Courses de la Semaine</h3>
+        <div class="data-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="course-select">Course</label>
+              <select id="course-select" class="form-group input">
+                <option value="1">Course 1</option>
+                <option value="2">Course 2</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="course-title">Titre de la course</label>
+              <input
+                type="text"
+                id="course-title"
+                placeholder="Circuit de Monza"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="course-position">Position (1-5)</label>
+              <input
+                type="number"
+                id="course-position"
+                min="1"
+                max="5"
+                placeholder="1"
+              />
+            </div>
+            <div class="form-group">
+              <label for="course-pilote">Pilote</label>
+              <input
+                type="text"
+                id="course-pilote"
+                placeholder="Nom du pilote"
+              />
+            </div>
+            <div class="form-group">
+              <label for="course-voiture">Voiture</label>
+              <input
+                type="text"
+                id="course-voiture"
+                placeholder="Modèle de voiture"
+              />
+            </div>
+            <div class="form-group">
+              <label for="course-temps">Temps</label>
+              <input type="text" id="course-temps" placeholder="1:23.456" />
+            </div>
+            <div class="form-group">
+              <label for="course-points">Points</label>
+              <input type="number" id="course-points" placeholder="25" />
+            </div>
+          </div>
+          <div class="form-row">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="add-course-result-btn"
+            >
+              Ajouter Résultat
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="clear-course-btn"
+            >
+              Effacer la course
+            </button>
+          </div>
+        </div>
+        <div class="data-list" id="courses-list"></div>
+        <div class="status-message" id="courses-status"></div>
+      </section>
+
+      <section class="admin-section" id="records-section">
+        <h3>⏱️ Records Circuit (10 circuits)</h3>
+        <div class="data-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="record-circuit">Circuit (1-10)</label>
+              <input
+                type="number"
+                id="record-circuit"
+                min="1"
+                max="10"
+                placeholder="1"
+              />
+            </div>
+            <div class="form-group">
+              <label for="record-title">Nom du circuit</label>
+              <input
+                type="text"
+                id="record-title"
+                placeholder="Nürburgring Nordschleife"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="record-position">Position (1-5)</label>
+              <input
+                type="number"
+                id="record-position"
+                min="1"
+                max="5"
+                placeholder="1"
+              />
+            </div>
+            <div class="form-group">
+              <label for="record-pilote">Pilote</label>
+              <input
+                type="text"
+                id="record-pilote"
+                placeholder="Nom du pilote"
+              />
+            </div>
+            <div class="form-group">
+              <label for="record-voiture">Voiture</label>
+              <input
+                type="text"
+                id="record-voiture"
+                placeholder="Modèle de voiture"
+              />
+            </div>
+            <div class="form-group">
+              <label for="record-temps">Temps record</label>
+              <input type="text" id="record-temps" placeholder="6:45.123" />
+            </div>
+          </div>
+          <div class="form-row">
+            <button type="button" class="btn btn-primary" id="add-record-btn">
+              Ajouter Record
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="clear-record-circuit-btn"
+            >
+              Effacer ce circuit
+            </button>
+          </div>
+        </div>
+        <div class="data-list" id="records-list"></div>
+        <div class="status-message" id="records-status"></div>
+      </section>
+
+      <section class="admin-section" id="backup-section">
+        <h3>💾 Sauvegarde & Chargement</h3>
+        <div class="form-row">
+          <button type="button" class="btn btn-primary" id="save-all-btn">
+            💾 Sauvegarder toutes les données
+          </button>
+          <button type="button" class="btn btn-secondary" id="load-all-btn">
+            📂 Charger depuis Firebase
+          </button>
+          <button type="button" class="btn btn-danger" id="reset-all-btn">
+            🔄 Réinitialiser aux valeurs par défaut
+          </button>
+        </div>
+        <div class="status-message" id="backup-status"></div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-container">
+        <div class="footer-bottom">
+          SRC - Shadow Racing Crew Administration Panel
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDt50bMsfPWPR4DwMyVqd0Tus75k_L0r2Y",
+        authDomain: "src-v2.firebaseapp.com",
+        databaseURL:
+          "https://src-v2-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "src-v2",
+        storageBucket: "src-v2.firebasestorage.app",
+        messagingSenderId: "704096252496",
+        appId: "1:704096252496:web:765cbeb1a8e4b61632d755",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const database = firebase.database();
+
+      function showNotification(message, type = "info", duration = 4000) {
+        const container = document.getElementById("notificationContainer");
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+
+        container.appendChild(notification);
+
+        setTimeout(() => {
+          notification.classList.add("fade-out");
+          setTimeout(() => {
+            notification.remove();
+          }, 300);
+        }, duration);
+      }
+
+      let blacklistData = Array(20).fill(null);
+      let course1Data = Array(5).fill(null);
+      let course2Data = Array(5).fill(null);
+      let recordsData = Array.from({ length: 10 }, () => Array(5).fill(null));
+      let planningData = {
+        date1: "",
+        time1: "",
+        date2: "",
+        time2: "",
+        imageUrl: "",
+      };
+
+      const statusMessages = {
+        blacklist: document.getElementById("blacklist-status"),
+        courses: document.getElementById("courses-status"),
+        records: document.getElementById("records-status"),
+        backup: document.getElementById("backup-status"),
+        planning: document.getElementById("planning-status"),
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const burger = document.getElementById("burger");
+        const nav = document.getElementById("nav-links");
+        burger.addEventListener("click", () => {
+          nav.classList.toggle("show");
+          burger.classList.toggle("active");
+        });
+
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+          auth.signOut().then(() => {
+            window.location.href = "index.html";
+          });
+        });
+
+        auth.onAuthStateChanged((user) => {
+          if (!user) {
+            window.location.href = "Admin.html";
+          } else {
+            showNotification("✅ Connecté à la base de données", "success");
+            loadAllData();
+            loadPlanningData();
+          }
+        });
+
+        setupEventListeners();
+      });
+
+      function setupEventListeners() {
+        document
+          .getElementById("add-blacklist-btn")
+          .addEventListener("click", addBlacklistEntry);
+        document
+          .getElementById("clear-blacklist-btn")
+          .addEventListener("click", clearBlacklist);
+
+        document
+          .getElementById("add-course-result-btn")
+          .addEventListener("click", addCourseResult);
+        document
+          .getElementById("clear-course-btn")
+          .addEventListener("click", clearCurrentCourse);
+
+        document
+          .getElementById("add-record-btn")
+          .addEventListener("click", addRecord);
+        document
+          .getElementById("clear-record-circuit-btn")
+          .addEventListener("click", clearCurrentRecordCircuit);
+
+        document
+          .getElementById("save-all-btn")
+          .addEventListener("click", saveAllData);
+        document
+          .getElementById("load-all-btn")
+          .addEventListener("click", loadAllData);
+        document
+          .getElementById("reset-all-btn")
+          .addEventListener("click", resetAllData);
+
+        document
+          .getElementById("save-planning-btn")
+          .addEventListener("click", savePlanning);
+        document
+          .getElementById("load-planning-btn")
+          .addEventListener("click", loadPlanningData);
+        document
+          .getElementById("clear-planning-btn")
+          .addEventListener("click", clearPlanning);
+      }
+
+      function addBlacklistEntry() {
+        const position = parseInt(
+          document.getElementById("blacklist-position").value,
+        );
+        const pseudo = document.getElementById("blacklist-pseudo").value.trim();
+        const voiture = document
+          .getElementById("blacklist-voiture")
+          .value.trim();
+        const points = parseInt(
+          document.getElementById("blacklist-points").value,
+        );
+
+        if (!position || position < 1 || position > 20) {
+          showNotification("Position invalide (1-20)", "error");
+          return;
+        }
+
+        if (!pseudo || !voiture || isNaN(points)) {
+          showNotification("Tous les champs sont requis", "error");
+          return;
+        }
+
+        blacklistData[position - 1] = { pseudo, voiture, points };
+        updateBlacklistDisplay();
+        showNotification(`Position ${position} mise à jour`, "success");
+      }
+
+      function clearBlacklist() {
+        if (confirm("Êtes-vous sûr de vouloir vider toute la liste noir ?")) {
+          blacklistData = Array(20).fill(null);
+          updateBlacklistDisplay();
+          showNotification("Liste noir vidée", "success");
+        }
+      }
+
+      function updateBlacklistDisplay() {
+        const list = document.getElementById("blacklist-list");
+        list.innerHTML = "";
+
+        blacklistData.forEach((entry, index) => {
+          if (entry) {
+            const item = document.createElement("div");
+            item.className = "data-item";
+            item.innerHTML = `
+              <div class="data-item-content">
+                <strong>${index + 1}.</strong> ${entry.pseudo} / ${entry.voiture} / ${entry.points} pts
+              </div>
+              <div class="data-item-actions">
+                <button class="btn btn-small btn-danger" onclick="deleteBlacklistEntry(${index})">🗑️</button>
+              </div>
+            `;
+            list.appendChild(item);
+          }
+        });
+      }
+
+      window.deleteBlacklistEntry = function (index) {
+        if (confirm(`Supprimer l'entrée position ${index + 1} ?`)) {
+          blacklistData[index] = null;
+          updateBlacklistDisplay();
+          showNotification(`Position ${index + 1} supprimée`, "success");
+        }
+      };
+
+      function addCourseResult() {
+        const courseNum = parseInt(
+          document.getElementById("course-select").value,
+        );
+        const title = document.getElementById("course-title").value.trim();
+        const position = parseInt(
+          document.getElementById("course-position").value,
+        );
+        const pilote = document.getElementById("course-pilote").value.trim();
+        const voiture = document.getElementById("course-voiture").value.trim();
+        const temps = document.getElementById("course-temps").value.trim();
+        const points = parseInt(document.getElementById("course-points").value);
+
+        if (!position || position < 1 || position > 5) {
+          showNotification("Position invalide (1-5)", "error");
+          return;
+        }
+
+        if (!pilote || !voiture || !temps || isNaN(points)) {
+          showNotification("Tous les champs sont requis", "error");
+          return;
+        }
+
+        const courseData = courseNum === 1 ? course1Data : course2Data;
+        courseData[position - 1] = {
+          title: title || `Course ${courseNum}`,
+          pilote,
+          voiture,
+          temps,
+          points,
+        };
+
+        if (title && position === 1) {
+          courseData[0].title = title;
+        }
+
+        updateCoursesDisplay();
+        showNotification(
+          `Course ${courseNum} - Position ${position} ajoutée`,
+          "success",
+        );
+      }
+
+      function clearCurrentCourse() {
+        const courseNum = parseInt(
+          document.getElementById("course-select").value,
+        );
+        if (confirm(`Vider la course ${courseNum} ?`)) {
+          if (courseNum === 1) {
+            course1Data = Array(5).fill(null);
+          } else {
+            course2Data = Array(5).fill(null);
+          }
+          updateCoursesDisplay();
+          showNotification(`Course ${courseNum} vidée`, "success");
+        }
+      }
+
+      function updateCoursesDisplay() {
+        const list = document.getElementById("courses-list");
+        list.innerHTML = "";
+
+        const course1Title = course1Data[0]?.title || "Course 1";
+        const course1Section = document.createElement("div");
+        course1Section.innerHTML = `<h4 style="color: var(--orange); margin: 15px 0 10px 0;">${course1Title}</h4>`;
+        list.appendChild(course1Section);
+
+        for (let i = 0; i < 5; i++) {
+          const entry = course1Data[i];
+          const item = document.createElement("div");
+          item.className = "data-item";
+          if (entry) {
+            item.innerHTML = `
+              <div class="data-item-content">
+                <strong>${i + 1}.</strong> ${entry.pilote} / ${entry.voiture} / ${entry.temps} / ${entry.points} pts
+              </div>
+              <div class="data-item-actions">
+                <button class="btn btn-small btn-danger" onclick="deleteCourseResult(1, ${i})">🗑️</button>
+              </div>
+            `;
+          } else {
+            item.innerHTML = `
+              <div class="data-item-content" style="opacity: 0.5;">
+                <strong>${i + 1}.</strong> --- / --- / --- / ---
+              </div>
+            `;
+          }
+          list.appendChild(item);
+        }
+
+        const course2Title = course2Data[0]?.title || "Course 2";
+        const course2Section = document.createElement("div");
+        course2Section.innerHTML = `<h4 style="color: var(--orange); margin: 15px 0 10px 0;">${course2Title}</h4>`;
+        list.appendChild(course2Section);
+
+        for (let i = 0; i < 5; i++) {
+          const entry = course2Data[i];
+          const item = document.createElement("div");
+          item.className = "data-item";
+          if (entry) {
+            item.innerHTML = `
+              <div class="data-item-content">
+                <strong>${i + 1}.</strong> ${entry.pilote} / ${entry.voiture} / ${entry.temps} / ${entry.points} pts
+              </div>
+              <div class="data-item-actions">
+                <button class="btn btn-small btn-danger" onclick="deleteCourseResult(2, ${i})">🗑️</button>
+              </div>
+            `;
+          } else {
+            item.innerHTML = `
+              <div class="data-item-content" style="opacity: 0.5;">
+                <strong>${i + 1}.</strong> --- / --- / --- / ---
+              </div>
+            `;
+          }
+          list.appendChild(item);
+        }
+      }
+
+      window.deleteCourseResult = function (courseNum, index) {
+        if (
+          confirm(
+            `Supprimer la position ${index + 1} de la course ${courseNum} ?`,
+          )
+        ) {
+          const courseData = courseNum === 1 ? course1Data : course2Data;
+          courseData[index] = null;
+          updateCoursesDisplay();
+          showNotification(
+            `Position ${index + 1} de la course ${courseNum} supprimée`,
+            "success",
+          );
+        }
+      };
+
+      function addRecord() {
+        const circuitNum = parseInt(
+          document.getElementById("record-circuit").value,
+        );
+        const title = document.getElementById("record-title").value.trim();
+        const position = parseInt(
+          document.getElementById("record-position").value,
+        );
+        const pilote = document.getElementById("record-pilote").value.trim();
+        const voiture = document.getElementById("record-voiture").value.trim();
+        const temps = document.getElementById("record-temps").value.trim();
+
+        if (!circuitNum || circuitNum < 1 || circuitNum > 10) {
+          showNotification("Circuit invalide (1-10)", "error");
+          return;
+        }
+
+        if (!position || position < 1 || position > 5) {
+          showNotification("Position invalide (1-5)", "error");
+          return;
+        }
+
+        if (!pilote || !voiture || !temps) {
+          showNotification("Tous les champs sont requis", "error");
+          return;
+        }
+
+        recordsData[circuitNum - 1][position - 1] = {
+          title: title || `Circuit ${circuitNum}`,
+          pilote,
+          voiture,
+          temps,
+        };
+
+        if (title && position === 1) {
+          recordsData[circuitNum - 1][0].title = title;
+        }
+
+        updateRecordsDisplay();
+        showNotification(
+          `Circuit ${circuitNum} - Position ${position} ajoutée`,
+          "success",
+        );
+      }
+
+      function clearCurrentRecordCircuit() {
+        const circuitNum = parseInt(
+          document.getElementById("record-circuit").value,
+        );
+        if (confirm(`Vider le circuit ${circuitNum} ?`)) {
+          recordsData[circuitNum - 1] = Array(5).fill(null);
+          updateRecordsDisplay();
+          showNotification(`Circuit ${circuitNum} vidé`, "success");
+        }
+      }
+
+      function updateRecordsDisplay() {
+        const list = document.getElementById("records-list");
+        list.innerHTML = "";
+
+        recordsData.forEach((circuit, circuitIndex) => {
+          const circuitTitle =
+            circuit[0]?.title || `Circuit ${circuitIndex + 1}`;
+          const circuitSection = document.createElement("div");
+          circuitSection.innerHTML = `<h4 style="color: var(--orange); margin: 15px 0 10px 0;">${circuitTitle}</h4>`;
+          list.appendChild(circuitSection);
+
+          circuit.forEach((entry, positionIndex) => {
+            if (entry) {
+              const item = document.createElement("div");
+              item.className = "data-item";
+              item.innerHTML = `
+                <div class="data-item-content">
+                  <strong>${positionIndex + 1}.</strong> ${entry.pilote} / ${entry.voiture} / ${entry.temps}
+                </div>
+                <div class="data-item-actions">
+                  <button class="btn btn-small btn-danger" onclick="deleteRecord(${circuitIndex}, ${positionIndex})">🗑️</button>
+                </div>
+              `;
+              list.appendChild(item);
+            }
+          });
+        });
+      }
+
+      window.deleteRecord = function (circuitIndex, positionIndex) {
+        if (
+          confirm(
+            `Supprimer la position ${positionIndex + 1} du circuit ${circuitIndex + 1} ?`,
+          )
+        ) {
+          recordsData[circuitIndex][positionIndex] = null;
+          updateRecordsDisplay();
+          showNotification(
+            `Position ${positionIndex + 1} du circuit ${circuitIndex + 1} supprimée`,
+            "success",
+          );
+        }
+      };
+
+      async function savePlanning() {
+        try {
+          showNotification("Enregistrement du planning...", "info");
+
+          const date1 = document.getElementById("planning-date1").value;
+          const time1 = document.getElementById("planning-time1").value;
+          const date2 = document.getElementById("planning-date2").value;
+          const time2 = document.getElementById("planning-time2").value;
+          const imageUrl = document.getElementById("planning-image-url").value;
+
+          planningData = { date1, time1, date2, time2, imageUrl };
+          await database.ref("planning").set(planningData);
+          updatePlanningDisplay();
+          showNotification("✅ Planning enregistré avec succès !", "success");
+        } catch (error) {
+          console.error("Erreur sauvegarde planning:", error);
+          showNotification("❌ Erreur lors de l'enregistrement", "error");
+        }
+      }
+
+      async function loadPlanningData() {
+        try {
+          const snapshot = await database.ref("planning").once("value");
+          const data = snapshot.val();
+
+          if (data) {
+            planningData = data;
+            document.getElementById("planning-date1").value = data.date1 || "";
+            document.getElementById("planning-time1").value = data.time1 || "";
+            document.getElementById("planning-date2").value = data.date2 || "";
+            document.getElementById("planning-time2").value = data.time2 || "";
+            document.getElementById("planning-image-url").value =
+              data.imageUrl || "";
+            updatePlanningDisplay();
+            showNotification("✅ Planning chargé avec succès", "success");
+          }
+        } catch (error) {
+          console.error("Erreur chargement planning:", error);
+          showNotification("❌ Erreur lors du chargement", "error");
+        }
+      }
+
+      function updatePlanningDisplay() {
+        const date1Text = planningData.date1
+          ? `${planningData.date1} à ${planningData.time1 || "??:??"}`
+          : "Non définie";
+        const date2Text = planningData.date2
+          ? `${planningData.date2} à ${planningData.time2 || "??:??"}`
+          : "Non définie";
+
+        document.getElementById("planning-date1-display").innerHTML =
+          `<strong>Date 1 :</strong> ${date1Text}`;
+        document.getElementById("planning-date2-display").innerHTML =
+          `<strong>Date 2 :</strong> ${date2Text}`;
+
+        const imageDisplay = document.getElementById("planning-image-display");
+        if (planningData.imageUrl) {
+          imageDisplay.innerHTML = `
+            <strong>Image :</strong><br>
+            <img src="${planningData.imageUrl}" class="planning-image" alt="Planning" onerror="this.style.display='none'">
+          `;
+        } else {
+          imageDisplay.innerHTML = `<strong>Image :</strong> Aucune image`;
+        }
+      }
+
+      function clearPlanning() {
+        if (confirm("Vider le planning ?")) {
+          planningData = {
+            date1: "",
+            time1: "",
+            date2: "",
+            time2: "",
+            imageUrl: "",
+          };
+          document.getElementById("planning-date1").value = "";
+          document.getElementById("planning-time1").value = "";
+          document.getElementById("planning-date2").value = "";
+          document.getElementById("planning-time2").value = "";
+          document.getElementById("planning-image-url").value = "";
+          updatePlanningDisplay();
+          showNotification("Planning vidé", "success");
+        }
+      }
+
+      async function saveAllData() {
+        try {
+          showNotification("Sauvegarde en cours...", "info");
+
+          const data = {
+            blacklist: blacklistData,
+            courses: { course1: course1Data, course2: course2Data },
+            records: recordsData,
+            planning: planningData,
+            lastUpdated: new Date().toISOString(),
+          };
+
+          await database.ref("srcData").set(data);
+          showNotification("✅ Données sauvegardées avec succès !", "success");
+        } catch (error) {
+          console.error("Erreur sauvegarde:", error);
+          showNotification("❌ Erreur sauvegarde: " + error.message, "error");
+        }
+      }
+
+      async function loadAllData() {
+        try {
+          showNotification("Chargement des données...", "info");
+
+          const snapshot = await database.ref("srcData").once("value");
+          const data = snapshot.val();
+
+          if (data) {
+            if (data.blacklist && Array.isArray(data.blacklist)) {
+              blacklistData = data.blacklist;
+              updateBlacklistDisplay();
+            }
+
+            if (data.courses) {
+              course1Data = data.courses.course1 || Array(5).fill(null);
+              course2Data = data.courses.course2 || Array(5).fill(null);
+              updateCoursesDisplay();
+            }
+
+            if (data.records && Array.isArray(data.records)) {
+              recordsData = data.records;
+              updateRecordsDisplay();
+            }
+
+            if (data.planning) {
+              planningData = data.planning;
+              updatePlanningDisplay();
+            }
+
+            showNotification("✅ Données chargées avec succès !", "success");
+          } else {
+            showNotification("Aucune donnée trouvée dans Firebase", "warning");
+          }
+        } catch (error) {
+          console.error("Erreur chargement:", error);
+          showNotification("❌ Erreur chargement: " + error.message, "error");
+        }
+      }
+
+      function resetAllData() {
+        if (
+          confirm(
+            "Êtes-vous sûr de vouloir réinitialiser toutes les données aux valeurs par défaut ?",
+          )
+        ) {
+          blacklistData = Array(20).fill(null);
+          course1Data = Array(5).fill(null);
+          course2Data = Array(5).fill(null);
+          recordsData = Array.from({ length: 10 }, () => Array(5).fill(null));
+          planningData = {
+            date1: "",
+            time1: "",
+            date2: "",
+            time2: "",
+            imageUrl: "",
+          };
+
+          updateBlacklistDisplay();
+          updateCoursesDisplay();
+          updateRecordsDisplay();
+          updatePlanningDisplay();
+
+          showNotification(
+            "✅ Données réinitialisées aux valeurs par défaut",
+            "success",
+          );
+        }
+      }
+    </script>
+  </body>
+</html>
